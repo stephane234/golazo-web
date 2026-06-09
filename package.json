@@ -1,0 +1,7 @@
+{
+  "name": "golazo-web",
+  "private": true,
+  "scripts": {
+    "build": "node scripts/inject-api-key.js"
+  }
+}

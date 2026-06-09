@@ -3,6 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="api-key" content="" />
     <title>World Cup 2026 Watch Party</title>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
@@ -140,14 +141,109 @@
     <script src="config.js"></script>
     <script src="js/shared.js"></script>
     <script>
+      var API_URL = "https://api.football-data.org/v4/competitions/WC/matches";
+      var REFRESH_MS = 60000;
+      var refreshTimer = null;
+      var activeMatches = CONFIG.matches;
       var matchCardIndex = 0;
+      const apiKey = document.querySelector('meta[name="api-key"]').content || "";
+
+      function isApiKeyMissing() {
+        return !apiKey;
+      }
+
+      function mapApiStatus(status) {
+        if (status === "IN_PLAY") {
+          return "live";
+        }
+        if (status === "PAUSED") {
+          return "soon";
+        }
+        if (status === "FINISHED") {
+          return "ft";
+        }
+        if (status === "TIMED" || status === "SCHEDULED") {
+          return "upcoming";
+        }
+        return "upcoming";
+      }
+
+      function formatApiMatchTime(utcDate) {
+        var date = new Date(utcDate);
+        var datePart = date.toLocaleDateString("en-US", {
+          month: "short",
+          day: "numeric",
+          timeZone: "America/Chicago",
+        });
+        var timePart = date.toLocaleTimeString("en-US", {
+          hour: "numeric",
+          minute: "2-digit",
+          timeZone: "America/Chicago",
+        });
+        return datePart + " · " + timePart + " CT";
+      }
+
+      function normalizeApiMatch(apiMatch) {
+        var home = apiMatch.homeTeam ? apiMatch.homeTeam.name : "TBD";
+        var away = apiMatch.awayTeam ? apiMatch.awayTeam.name : "TBD";
+        var utcDate = apiMatch.utcDate || null;
+
+        return {
+          teams: home + " vs " + away,
+          stage: apiMatch.stage ? apiMatch.stage.replace(/_/g, " ") : "",
+          venue: apiMatch.venue || "",
+          date: utcDate
+            ? new Date(utcDate).toLocaleDateString("en-CA", { timeZone: "America/Chicago" })
+            : "",
+          time: utcDate ? formatApiMatchTime(utcDate) : "",
+          status: mapApiStatus(apiMatch.status),
+        };
+      }
+
+      async function loadMatches() {
+        if (isApiKeyMissing()) {
+          activeMatches = CONFIG.matches;
+          renderHero();
+          renderMatches();
+          renderRsvpForm();
+          return;
+        }
+
+        try {
+          var response = await fetch(API_URL, {
+            headers: { "X-Auth-Token": apiKey },
+          });
+
+          if (!response.ok) {
+            throw new Error("API request failed");
+          }
+
+          var data = await response.json();
+
+          if (data.matches && data.matches.length) {
+            activeMatches = data.matches.map(normalizeApiMatch);
+          } else {
+            activeMatches = CONFIG.matches;
+          }
+        } catch (err) {
+          activeMatches = CONFIG.matches;
+        }
+
+        renderHero();
+        renderMatches();
+        renderRsvpForm();
+      }
+
+      function startAutoRefresh() {
+        refreshTimer = setInterval(loadMatches, REFRESH_MS);
+      }
 
       function renderHero() {
         setPageTitle("World Cup 2026 Watch Party");
         document.getElementById("hero-title").textContent = CONFIG.barName;
         document.getElementById("hero-tagline").textContent = CONFIG.tagline;
 
-        var hasLive = CONFIG.matches.some(function (match) {
+        var hasLive = activeMatches.some(function (match) {
           return match.status === "live";
         });
         var statusEl = document.getElementById("hero-status");
@@ -267,12 +363,13 @@
           value.indexOf("quarter") !== -1 ||
           value.indexOf("semi") !== -1 ||
           value.indexOf("final") !== -1 ||
-          value.indexOf("knockout") !== -1
+          value.indexOf("knockout") !== -1 ||
+          value.indexOf("last 16") !== -1
         );
       }
 
       function filterMatches(filterKey) {
-        return CONFIG.matches.filter(function (match) {
+        return activeMatches.filter(function (match) {
           if (filterKey === "all") {
             return true;
           }
@@ -283,7 +380,7 @@
             return match.teams.indexOf("USA") !== -1;
           }
           if (filterKey === "group") {
-            return match.stage.indexOf("Group") === 0;
+            return match.stage.toLowerCase().indexOf("group") !== -1;
           }
           if (filterKey === "knockout") {
             return isKnockoutStage(match.stage);
@@ -383,8 +480,8 @@
 
       function renderTodayView() {
         var todayKey = getTodayKey();
-        var todayMatches = CONFIG.matches.filter(isMatchToday);
-        var upcomingMatches = CONFIG.matches.filter(isMatchUpcoming);
+        var todayMatches = activeMatches.filter(isMatchToday);
+        var upcomingMatches = activeMatches.filter(isMatchUpcoming);
 
         var html = "";
 
@@ -494,7 +591,7 @@
         var matchSelect = document.getElementById("rsvp-match");
         matchSelect.innerHTML =
           '<option value="" disabled selected>Select a match</option>' +
-          CONFIG.matches
+          activeMatches
             .map(function (match) {
               return (
                 '<option value="' + match.teams + '">' + match.teams + " — " + match.time + "</option>"
@@ -556,15 +653,14 @@
       }
 
       applyBrandColors();
-      renderHero();
       renderMatchFilters();
       setupMatchFilters();
       setupUpcomingToggle();
-      renderMatches();
       renderSpecials();
-      renderRsvpForm();
       renderFooter();
       setupRsvpSubmit();
+      loadMatches();
+      startAutoRefresh();
     </script>
   </body>
 </html>
