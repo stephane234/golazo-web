@@ -1,158 +1,308 @@
 <!DOCTYPE html>
 <html lang="en">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>World Cup Bracket</title>
-    <link
-      rel="stylesheet"
-      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
-    />
-    <link rel="stylesheet" href="styles/main.css" />
-  </head>
-  <body>
-    <header class="top-bar">
-      <div class="container top-bar__inner">
-        <p class="top-bar__name" id="top-bar-name"></p>
-      </div>
-    </header>
 
-    <nav class="site-nav" aria-label="Site navigation">
-      <div class="container site-nav__inner">
-        <a href="index.html" class="site-nav__tab">
-          <i class="ti ti-calendar-event" aria-hidden="true"></i>
-          <span>Watch Party</span>
-        </a>
-        <a href="scores.html" class="site-nav__tab">
-          <i class="ti ti-circle" aria-hidden="true"></i>
-          <span>Live Scores</span>
-        </a>
-        <a href="bracket.html" class="site-nav__tab site-nav__tab--active">
-          <i class="ti ti-tournament" aria-hidden="true"></i>
-          <span>Bracket</span>
-        </a>
-        <a href="countdown.html" class="site-nav__tab">
-          <i class="ti ti-clock" aria-hidden="true"></i>
-          <span>Countdown</span>
-        </a>
-      </div>
-    </nav>
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>World Cup 2026 Bracket</title>
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css" />
+  <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700&display=swap" rel="stylesheet" />
+  <script src="config.js"></script>
+  <style>
+    *,
+    *::before,
+    *::after {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+    }
 
-    <p class="bracket-banner">
-      Knockout stage begins July 4, 2026 — check back as teams advance.
-    </p>
+    body {
+      font-family: 'Outfit', sans-serif;
+      background: #f8f8f8;
+      color: #1a1a1a;
+    }
 
-    <main>
-      <section class="section bracket-intro" aria-labelledby="bracket-heading">
-        <div class="container">
-          <p class="section-label">Knockout stage</p>
-          <h1 class="section__title" id="bracket-heading">World Cup 2026 Bracket</h1>
-          <p class="section__subtitle" id="bracket-subtitle"></p>
-        </div>
-      </section>
+    .top-bar {
+      background: var(--brand, #042C53);
+      padding: 14px 1.5rem;
+      text-align: center;
+    }
 
-      <section class="section section--alt bracket-body" aria-label="Tournament bracket">
-        <div class="container">
-          <div class="bracket" id="bracket"></div>
-          <p class="bracket-update-note">
-            The bracket is updated manually after each match result.
-          </p>
-        </div>
-      </section>
-    </main>
+    .top-bar h1 {
+      font-size: 16px;
+      font-weight: 600;
+      color: #fff;
+    }
 
-    <footer class="footer" id="footer">
-      <div class="container">
-        <p class="footer__name" id="footer-name"></p>
-        <p class="footer__address" id="footer-address"></p>
-        <nav class="footer__social" id="footer-social" aria-label="Social links"></nav>
-        <p class="footer__meta" id="footer-meta" hidden></p>
-      </div>
-    </footer>
+    .nav {
+      background: #fff;
+      border-bottom: 1px solid #eee;
+      display: flex;
+      justify-content: center;
+      gap: 4px;
+      padding: 8px 1rem;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+    }
 
-    <script src="config.js"></script>
-    <script src="js/shared.js"></script>
-    <script>
-      function createTbdMatch() {
-        return { home: "TBD", away: "TBD" };
+    .nav a {
+      font-size: 13px;
+      font-weight: 500;
+      padding: 7px 16px;
+      border-radius: 20px;
+      text-decoration: none;
+      color: #555;
+      display: flex;
+      align-items: center;
+      gap: 5px;
+      transition: all .15s;
+    }
+
+    .nav a.active {
+      background: var(--brand, #042C53);
+      color: #fff;
+    }
+
+    .nav a:hover:not(.active) {
+      background: #f0f0f0;
+    }
+
+    .banner {
+      background: #fef3c7;
+      color: #92400e;
+      text-align: center;
+      padding: 10px 1rem;
+      font-size: 13px;
+      font-weight: 600;
+      border-bottom: 1px solid #fde68a;
+    }
+
+    .page-header {
+      padding: 2rem 1.5rem 1.5rem;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .page-label {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: var(--brand, #042C53);
+      margin-bottom: 8px;
+    }
+
+    .page-title {
+      font-size: 28px;
+      font-weight: 700;
+      color: #1a1a1a;
+      margin-bottom: 6px;
+    }
+
+    .page-sub {
+      font-size: 14px;
+      color: #888;
+    }
+
+    .bracket-wrap {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 0 1.5rem 2rem;
+    }
+
+    .round {
+      margin-bottom: 2rem;
+    }
+
+    .round-title {
+      font-size: 11px;
+      font-weight: 700;
+      letter-spacing: .08em;
+      text-transform: uppercase;
+      color: #888;
+      text-align: center;
+      margin-bottom: 12px;
+    }
+
+    .round-meta {
+      font-size: 12px;
+      color: #aaa;
+      text-align: center;
+      margin-bottom: 10px;
+      margin-top: -8px;
+    }
+
+    .match {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin-bottom: 8px;
+    }
+
+    .team {
+      flex: 1;
+      background: #e8e8e8;
+      border-radius: 8px;
+      padding: 12px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      opacity: .6;
+    }
+
+    .team-name {
+      font-size: 14px;
+      font-weight: 500;
+      color: #888;
+    }
+
+    .arrow {
+      color: #ccc;
+      font-size: 16px;
+      flex-shrink: 0;
+    }
+
+    .update-note {
+      text-align: center;
+      font-size: 12px;
+      color: #aaa;
+      margin-top: 1rem;
+      padding-bottom: 1rem;
+    }
+
+    .footer {
+      background: var(--brand, #042C53);
+      padding: 1.5rem;
+      text-align: center;
+    }
+
+    .footer-name {
+      font-size: 14px;
+      font-weight: 600;
+      color: #fff;
+      margin-bottom: 4px;
+    }
+
+    .footer-addr {
+      font-size: 12px;
+      color: rgba(255, 255, 255, .6);
+      margin-bottom: 8px;
+    }
+
+    .footer-meta {
+      font-size: 11px;
+      color: rgba(255, 255, 255, .4);
+    }
+
+    @media (max-width: 480px) {
+      .nav a span {
+        display: none;
       }
 
-      function createTbdMatches(count) {
-        var matches = [];
-        for (var i = 0; i < count; i++) {
-          matches.push(createTbdMatch());
-        }
-        return matches;
+      .nav a {
+        padding: 8px 12px;
       }
 
-      var BRACKET = {
-        roundOf32: createTbdMatches(16),
-        roundOf16: createTbdMatches(8),
-        quarterfinals: createTbdMatches(4),
-        semifinals: createTbdMatches(2),
-        thirdPlace: createTbdMatch(),
-        final: Object.assign(createTbdMatch(), {
-          meta: "July 19 · MetLife Stadium, New Jersey",
-        }),
-      };
-
-      function renderTeamCard() {
-        return (
-          '<div class="team-card team-card--tbd">' +
-          '<span class="team-card__name">TBD</span>' +
-          "</div>"
-        );
+      .page-title {
+        font-size: 22px;
       }
+    }
+  </style>
+</head>
 
-      function renderMatch() {
-        return (
-          '<div class="bracket-match">' +
-          renderTeamCard() +
-          '<span class="bracket-match__arrow" aria-hidden="true"><i class="ti ti-arrow-right"></i></span>' +
-          renderTeamCard() +
-          "</div>"
-        );
-      }
+<body>
 
-      function renderRound(title, matches, extraMeta) {
-        var metaHtml = extraMeta
-          ? '<p class="bracket-round__meta">' + extraMeta + "</p>"
-          : "";
+  <div class="top-bar">
+    <h1 id="bar-name">Loading...</h1>
+  </div>
 
-        return (
-          '<section class="bracket-round">' +
-          '<h2 class="section-label bracket-round__title">' +
-          title +
-          "</h2>" +
-          metaHtml +
-          '<div class="bracket-round__matches">' +
-          matches.map(renderMatch).join("") +
-          "</div>" +
-          "</section>"
-        );
-      }
+  <nav class="nav">
+    <a href="index.html"><i class="ti ti-calendar-event"></i><span>Watch Party</span></a>
+    <a href="scores.html"><i class="ti ti-circle"></i><span>Live Scores</span></a>
+    <a href="bracket.html" class="active"><i class="ti ti-tournament"></i><span>Bracket</span></a>
+    <a href="countdown.html"><i class="ti ti-clock"></i><span>Countdown</span></a>
+  </nav>
 
-      function renderBracket() {
-        document.getElementById("bracket").innerHTML =
-          renderRound("Round of 32", BRACKET.roundOf32, "32 teams") +
-          renderRound("Round of 16", BRACKET.roundOf16) +
-          renderRound("Quarterfinals", BRACKET.quarterfinals) +
-          renderRound("Semifinals", BRACKET.semifinals) +
-          renderRound("Third Place", [BRACKET.thirdPlace]) +
-          renderRound("Final", [BRACKET.final], BRACKET.final.meta);
-      }
+  <div class="banner">
+    Knockout stage begins July 4, 2026 — check back as teams advance.
+  </div>
 
-      function renderPage() {
-        setPageTitle("World Cup 2026 Bracket");
-        document.getElementById("top-bar-name").textContent = CONFIG.barName;
-        document.getElementById("bracket-subtitle").textContent =
-          "Follow the knockout stage at " + CONFIG.barName + ".";
-        renderSiteFooter();
-      }
+  <div class="page-header">
+    <p class="page-label">Knockout Stage</p>
+    <h1 class="page-title">World Cup 2026 Bracket</h1>
+    <p class="page-sub" id="page-sub"></p>
+  </div>
 
-      applyBrandColors();
-      renderPage();
-      renderBracket();
-    </script>
-  </body>
+  <div class="bracket-wrap">
+
+    <div class="round">
+      <p class="round-title">Round of 32</p>
+      <p class="round-meta">32 teams · 16 matches</p>
+      <div id="r32"></div>
+    </div>
+
+    <div class="round">
+      <p class="round-title">Round of 16</p>
+      <div id="r16"></div>
+    </div>
+
+    <div class="round">
+      <p class="round-title">Quarterfinals</p>
+      <div id="qf"></div>
+    </div>
+
+    <div class="round">
+      <p class="round-title">Semifinals</p>
+      <div id="sf"></div>
+    </div>
+
+    <div class="round">
+      <p class="round-title">Third Place</p>
+      <div id="tp"></div>
+    </div>
+
+    <div class="round">
+      <p class="round-title">Final</p>
+      <p class="round-meta">July 19 · MetLife Stadium, New Jersey</p>
+      <div id="final"></div>
+    </div>
+
+    <p class="update-note">Bracket updates after each match result.</p>
+  </div>
+
+  <footer class="footer">
+    <p class="footer-name" id="footer-name"></p>
+    <p class="footer-addr" id="footer-addr"></p>
+    <p class="footer-meta">Powered by GolazoWeb · World Cup 2026</p>
+  </footer>
+
+  <script>
+    document.documentElement.style.setProperty('--brand', CONFIG.brandColor);
+    document.getElementById('bar-name').textContent = CONFIG.barName;
+    document.getElementById('page-sub').textContent = 'Follow the knockout stage at ' + CONFIG.barName + '.';
+    document.getElementById('footer-name').textContent = CONFIG.barName;
+    document.getElementById('footer-addr').textContent = CONFIG.address;
+
+    function tbdMatch() {
+      return '<div class="match"><div class="team"><span class="team-name">TBD</span></div><i class="ti ti-arrow-right arrow"></i><div class="team"><span class="team-name">TBD</span></div></div>';
+    }
+
+    function fillRound(id, count) {
+      var html = '';
+      for (var i = 0; i < count; i++) html += tbdMatch();
+      document.getElementById(id).innerHTML = html;
+    }
+
+    fillRound('r32', 16);
+    fillRound('r16', 8);
+    fillRound('qf', 4);
+    fillRound('sf', 2);
+    fillRound('tp', 1);
+    fillRound('final', 1);
+  </script>
+
+</body>
+
 </html>
