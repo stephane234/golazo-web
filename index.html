@@ -4,18 +4,34 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>World Cup 2026 Watch Party</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
     <link
       rel="stylesheet"
       href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
     />
     <link rel="stylesheet" href="styles/main.css" />
+    <link rel="stylesheet" href="styles/index.css" />
   </head>
-  <body>
+  <body class="page-home">
     <header class="hero" id="hero">
       <div class="container">
+        <p class="hero__tournament">FIFA World Cup 2026</p>
         <h1 class="hero__title" id="hero-title"></h1>
         <p class="hero__tagline" id="hero-tagline"></p>
-        <div class="hero__chips" id="hero-chips"></div>
+        <p class="hero__status" id="hero-status" hidden></p>
+        <div class="hero__stats" id="hero-stats" aria-label="Tournament stats">
+          <span class="hero__stat">104 Matches</span>
+          <span class="hero__stat-divider" aria-hidden="true"></span>
+          <span class="hero__stat">48 Teams</span>
+          <span class="hero__stat-divider" aria-hidden="true"></span>
+          <span class="hero__stat">Jun 11 – Jul 19</span>
+        </div>
+        <a class="hero__cta" href="#rsvp-section">Reserve Your Table</a>
       </div>
     </header>
 
@@ -41,10 +57,12 @@
     </nav>
 
     <main>
-      <section class="section" id="matches-section" aria-labelledby="matches-heading">
+      <section class="section section--matches" id="matches-section" aria-labelledby="matches-heading">
         <div class="container">
-          <p class="section-label">Match schedule</p>
-          <h2 class="section__title" id="matches-heading">Today's matches</h2>
+          <h2 class="section__title section__title--live" id="matches-heading">
+            <span class="live-dot" aria-hidden="true"></span>
+            Today's matches
+          </h2>
           <p class="section__subtitle" id="matches-subtitle"></p>
           <div class="match-filters" id="match-filters" role="toolbar" aria-label="Filter matches"></div>
           <div id="matches-list"></div>
@@ -52,19 +70,17 @@
         </div>
       </section>
 
-      <section class="section section--alt" id="specials-section" aria-labelledby="specials-heading">
+      <section class="section section--specials" id="specials-section" aria-labelledby="specials-heading">
         <div class="container">
-          <p class="section-label">Food &amp; drink</p>
-          <h2 class="section__title" id="specials-heading">Match day specials</h2>
+          <h2 class="section__title" id="specials-heading">Tonight's specials</h2>
           <p class="section__subtitle" id="specials-subtitle"></p>
           <div class="specials" id="specials-list" role="list"></div>
         </div>
       </section>
 
-      <section class="section" id="rsvp-section" aria-labelledby="rsvp-heading">
+      <section class="section section--rsvp" id="rsvp-section" aria-labelledby="rsvp-heading">
         <div class="container">
-          <p class="section-label">Reservations</p>
-          <h2 class="section__title" id="rsvp-heading">Reserve your spot</h2>
+          <h2 class="section__title" id="rsvp-heading">Secure your table</h2>
           <p class="section__subtitle" id="rsvp-subtitle"></p>
           <div class="rsvp-card">
             <form class="rsvp-form" id="rsvp-form" novalidate>
@@ -95,6 +111,10 @@
                 <select id="rsvp-match" name="match" required></select>
               </div>
               <button type="submit" class="btn" id="rsvp-submit">Send RSVP</button>
+              <p class="rsvp-trust">
+                <i class="ti ti-circle-check" aria-hidden="true"></i>
+                Free reservation · No credit card · Instant confirmation
+              </p>
               <p class="rsvp-error" id="rsvp-error" hidden></p>
             </form>
             <div class="rsvp-success" id="rsvp-success" hidden>
@@ -110,7 +130,9 @@
       <div class="container">
         <p class="footer__name" id="footer-name"></p>
         <p class="footer__address" id="footer-address"></p>
+        <p class="footer__phone" id="footer-phone"></p>
         <nav class="footer__social" id="footer-social" aria-label="Social links"></nav>
+        <p class="footer__powered">Powered by GolazoWeb · World Cup 2026</p>
         <p class="footer__meta" id="footer-meta" hidden></p>
       </div>
     </footer>
@@ -118,30 +140,35 @@
     <script src="config.js"></script>
     <script src="js/shared.js"></script>
     <script>
+      var matchCardIndex = 0;
+
       function renderHero() {
         setPageTitle("World Cup 2026 Watch Party");
         document.getElementById("hero-title").textContent = CONFIG.barName;
         document.getElementById("hero-tagline").textContent = CONFIG.tagline;
 
-        const chips = [
-          { icon: "ti-map-pin", text: CONFIG.address },
-          { icon: "ti-clock", text: CONFIG.hours },
-          { icon: "ti-phone", text: CONFIG.phone, href: "tel:" + CONFIG.phone.replace(/\D/g, "") },
-        ];
+        var hasLive = CONFIG.matches.some(function (match) {
+          return match.status === "live";
+        });
+        var statusEl = document.getElementById("hero-status");
+        statusEl.hidden = false;
 
-        document.getElementById("hero-chips").innerHTML = chips
-          .map(function (chip) {
-            const inner =
-              '<i class="ti ' +
-              chip.icon +
-              '" aria-hidden="true"></i><span>' +
-              chip.text +
-              "</span>";
-            return chip.href
-              ? '<a class="chip" href="' + chip.href + '">' + inner + "</a>"
-              : '<span class="chip">' + inner + "</span>";
-          })
-          .join("");
+        if (hasLive) {
+          statusEl.className = "hero__status hero__status--live";
+          statusEl.innerHTML =
+            '<span class="hero__status-dot" aria-hidden="true"></span>Live Now';
+        } else {
+          statusEl.className = "hero__status hero__status--today";
+          statusEl.textContent = "Matches Today";
+        }
+      }
+
+      function splitTeams(teams) {
+        var parts = teams.split(" vs ");
+        return {
+          home: parts[0] || teams,
+          away: parts[1] || "",
+        };
       }
 
       function renderStatusBadge(match) {
@@ -178,25 +205,41 @@
       }
 
       function renderMatchCard(match) {
+        var teams = splitTeams(match.teams);
+        var delay = matchCardIndex * 60;
+        matchCardIndex += 1;
+
         return (
-          '<article class="match-card" role="listitem">' +
-          '<h3 class="match-card__teams">' +
-          match.teams +
-          "</h3>" +
-          '<p class="match-card__meta">' +
-          match.stage +
-          "</p>" +
-          '<p class="match-card__meta">' +
+          '<article class="match-card match-card--' +
+          match.status +
+          '" role="listitem" style="animation-delay:' +
+          delay +
+          'ms">' +
+          '<div class="match-card__teams-row">' +
+          '<span class="match-card__team">' +
+          teams.home +
+          "</span>" +
+          '<span class="match-card__vs">VS</span>' +
+          '<span class="match-card__team">' +
+          teams.away +
+          "</span>" +
+          "</div>" +
+          '<div class="match-card__meta-row">' +
+          '<p class="match-card__venue">' +
           match.venue +
           "</p>" +
+          '<p class="match-card__time">' +
+          match.time +
+          "</p>" +
+          "</div>" +
           renderStatusBadge(match) +
           "</article>"
         );
       }
 
       function formatDateHeader(dateKey) {
-        const parts = dateKey.split("-");
-        const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        var parts = dateKey.split("-");
+        var date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
         return date.toLocaleDateString("en-US", {
           weekday: "long",
           month: "long",
@@ -218,7 +261,7 @@
       }
 
       function isKnockoutStage(stage) {
-        const value = stage.toLowerCase();
+        var value = stage.toLowerCase();
         return (
           value.indexOf("round of") !== -1 ||
           value.indexOf("quarter") !== -1 ||
@@ -250,7 +293,7 @@
       }
 
       function renderMatchesByDate(matches) {
-        const grouped = {};
+        var grouped = {};
 
         matches.forEach(function (match) {
           if (!grouped[match.date]) {
@@ -282,7 +325,7 @@
         );
       }
 
-      const MATCH_FILTERS = [
+      var MATCH_FILTERS = [
         { key: "all", label: "All" },
         { key: "today", label: "Today" },
         { key: "usa", label: "USA" },
@@ -290,13 +333,12 @@
         { key: "knockout", label: "Knockout" },
       ];
 
-      let activeMatchFilter = "today";
-      let upcomingExpanded = false;
+      var activeMatchFilter = "today";
+      var upcomingExpanded = false;
 
       function renderMatchFilters() {
         document.getElementById("match-filters").innerHTML = MATCH_FILTERS.map(function (filter) {
-          const activeClass =
-            filter.key === activeMatchFilter ? " match-filter--active" : "";
+          var activeClass = filter.key === activeMatchFilter ? " match-filter--active" : "";
           return (
             '<button type="button" class="match-filter' +
             activeClass +
@@ -320,7 +362,7 @@
 
       function setupMatchFilters() {
         document.getElementById("match-filters").addEventListener("click", function (event) {
-          const button = event.target.closest("[data-filter]");
+          var button = event.target.closest("[data-filter]");
           if (!button) {
             return;
           }
@@ -330,7 +372,7 @@
 
       function setupUpcomingToggle() {
         document.getElementById("matches-list").addEventListener("click", function (event) {
-          const toggle = event.target.closest("[data-upcoming-toggle]");
+          var toggle = event.target.closest("[data-upcoming-toggle]");
           if (!toggle) {
             return;
           }
@@ -340,11 +382,11 @@
       }
 
       function renderTodayView() {
-        const todayKey = getTodayKey();
-        const todayMatches = CONFIG.matches.filter(isMatchToday);
-        const upcomingMatches = CONFIG.matches.filter(isMatchUpcoming);
+        var todayKey = getTodayKey();
+        var todayMatches = CONFIG.matches.filter(isMatchToday);
+        var upcomingMatches = CONFIG.matches.filter(isMatchUpcoming);
 
-        let html = "";
+        var html = "";
 
         if (todayMatches.length) {
           html +=
@@ -376,9 +418,7 @@
 
           if (upcomingExpanded) {
             html +=
-              '<div class="matches-upcoming__panel">' +
-              renderMatchesByDate(upcomingMatches) +
-              "</div>";
+              '<div class="matches-upcoming__panel">' + renderMatchesByDate(upcomingMatches) + "</div>";
           }
 
           html += "</section>";
@@ -388,20 +428,21 @@
       }
 
       function renderMatches() {
+        matchCardIndex = 0;
         document.getElementById("matches-subtitle").textContent =
           "Catch every kickoff at " + CONFIG.barName + ".";
 
-        const listEl = document.getElementById("matches-list");
-        const emptyEl = document.getElementById("matches-empty");
+        var listEl = document.getElementById("matches-list");
+        var emptyEl = document.getElementById("matches-empty");
 
         if (activeMatchFilter === "today") {
-          const todayView = renderTodayView();
+          var todayView = renderTodayView();
           listEl.innerHTML = todayView.html;
           emptyEl.hidden = !todayView.isEmpty;
           return;
         }
 
-        const filtered = filterMatches(activeMatchFilter);
+        var filtered = filterMatches(activeMatchFilter);
 
         if (!filtered.length) {
           listEl.innerHTML = "";
@@ -444,13 +485,13 @@
 
       function renderRsvpForm() {
         document.getElementById("rsvp-subtitle").textContent =
-          "Let us know you're coming so we can save you a great seat.";
+          "Join hundreds of fans watching live — reserve now, it's free";
 
-        const form = document.getElementById("rsvp-form");
+        var form = document.getElementById("rsvp-form");
         form.action = CONFIG.formEndpoint;
         form.method = "POST";
 
-        const matchSelect = document.getElementById("rsvp-match");
+        var matchSelect = document.getElementById("rsvp-match");
         matchSelect.innerHTML =
           '<option value="" disabled selected>Select a match</option>' +
           CONFIG.matches
@@ -467,13 +508,14 @@
 
       function renderFooter() {
         renderSiteFooter();
+        document.getElementById("footer-phone").textContent = CONFIG.phone;
       }
 
       function setupRsvpSubmit() {
-        const form = document.getElementById("rsvp-form");
-        const successEl = document.getElementById("rsvp-success");
-        const errorEl = document.getElementById("rsvp-error");
-        const submitBtn = document.getElementById("rsvp-submit");
+        var form = document.getElementById("rsvp-form");
+        var successEl = document.getElementById("rsvp-success");
+        var errorEl = document.getElementById("rsvp-error");
+        var submitBtn = document.getElementById("rsvp-submit");
 
         form.addEventListener("submit", async function (event) {
           event.preventDefault();
@@ -488,7 +530,7 @@
           submitBtn.textContent = "Sending…";
 
           try {
-            const response = await fetch(CONFIG.formEndpoint, {
+            var response = await fetch(CONFIG.formEndpoint, {
               method: "POST",
               body: new FormData(form),
               headers: { Accept: "application/json" },
@@ -500,7 +542,7 @@
               return;
             }
 
-            const data = await response.json().catch(function () {
+            var data = await response.json().catch(function () {
               return {};
             });
             throw new Error(data.error || "Something went wrong. Please try again.");
