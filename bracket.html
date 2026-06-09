@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Cup Bracket</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <div class="container top-bar__inner">
+        <p class="top-bar__name" id="top-bar-name"></p>
+      </div>
+    </header>
+
+    <main>
+      <section class="section bracket-intro" aria-labelledby="bracket-heading">
+        <div class="container">
+          <h1 class="section__title" id="bracket-heading">World Cup 2026 Bracket</h1>
+          <p class="section__subtitle" id="bracket-subtitle"></p>
+        </div>
+      </section>
+
+      <section class="section section--alt bracket-body" aria-label="Tournament bracket">
+        <div class="container">
+          <div class="bracket" id="bracket"></div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer footer--compact" id="footer">
+      <div class="container">
+        <p class="footer__name" id="footer-name"></p>
+        <p class="footer__address" id="footer-address"></p>
+        <p class="bracket-footer-note" id="bracket-note"></p>
+      </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script>
+      var BRACKET = {
+        quarterfinals: [
+          { home: "Argentina", homeScore: 3, away: "England", awayScore: 1, winner: "Argentina" },
+          { home: "Brazil", homeScore: 2, away: "Germany", awayScore: 0, winner: "Brazil" },
+          { home: "Spain", homeScore: 1, away: "Portugal", awayScore: 0, winner: "Spain" },
+          { home: "France", homeScore: 2, away: "Morocco", awayScore: 1, winner: "France" },
+        ],
+        semifinals: [
+          { home: "Argentina", homeScore: 2, away: "Brazil", awayScore: 1, winner: "Argentina" },
+          { home: "Spain", homeScore: null, away: "France", awayScore: null, winner: null },
+        ],
+        final: {
+          home: "Argentina",
+          away: "TBD",
+          winner: null,
+          meta: "July 19 · MetLife Stadium",
+        },
+      };
+
+      function applyBrandColors() {
+        document.documentElement.style.setProperty("--brand-color", CONFIG.brandColor);
+        document.documentElement.style.setProperty("--brand-light", CONFIG.brandLight);
+        document.documentElement.style.setProperty("--brand-text", CONFIG.brandText);
+      }
+
+      function getTeamCardClass(team, winner, isTbd) {
+        if (isTbd) {
+          return "team-card team-card--dimmed";
+        }
+        if (winner && team === winner) {
+          return "team-card team-card--winner";
+        }
+        if (winner && team !== winner) {
+          return "team-card team-card--dimmed";
+        }
+        return "team-card";
+      }
+
+      function renderTeamCard(team, score, winner, isTbd) {
+        var cardClass = getTeamCardClass(team, winner, isTbd);
+        var isWinner = winner && team === winner;
+        var scoreHtml =
+          score !== null && score !== undefined
+            ? '<span class="team-card__score">' + score + "</span>"
+            : "";
+
+        return (
+          '<div class="' +
+          cardClass +
+          '">' +
+          '<span class="team-card__name">' +
+          team +
+          "</span>" +
+          (isWinner
+            ? '<i class="ti ti-circle-check team-card__check" aria-label="Winner"></i>'
+            : "") +
+          scoreHtml +
+          "</div>"
+        );
+      }
+
+      function renderMatch(match) {
+        var homeTbd = match.home === "TBD";
+        var awayTbd = match.away === "TBD";
+
+        return (
+          '<div class="bracket-match">' +
+          renderTeamCard(match.home, match.homeScore, match.winner, homeTbd) +
+          '<span class="bracket-match__arrow" aria-hidden="true"><i class="ti ti-arrow-right"></i></span>' +
+          renderTeamCard(match.away, match.awayScore, match.winner, awayTbd) +
+          "</div>"
+        );
+      }
+
+      function renderRound(title, matches, extraMeta) {
+        var metaHtml = extraMeta
+          ? '<p class="bracket-round__meta">' + extraMeta + "</p>"
+          : "";
+
+        return (
+          '<section class="bracket-round">' +
+          "<h2 class=\"bracket-round__title\">" +
+          title +
+          "</h2>" +
+          metaHtml +
+          '<div class="bracket-round__matches">' +
+          matches.map(renderMatch).join("") +
+          "</div>" +
+          "</section>"
+        );
+      }
+
+      function renderBracket() {
+        document.getElementById("bracket").innerHTML =
+          renderRound("Quarterfinals", BRACKET.quarterfinals) +
+          renderRound("Semifinals", BRACKET.semifinals) +
+          renderRound("Final", [BRACKET.final], BRACKET.final.meta);
+      }
+
+      function renderPage() {
+        document.title = CONFIG.barName + " — World Cup 2026 Bracket";
+        document.getElementById("top-bar-name").textContent = CONFIG.barName;
+        document.getElementById("bracket-subtitle").textContent =
+          "Follow the knockout stage at " + CONFIG.barName + ".";
+        document.getElementById("footer-name").textContent = CONFIG.barName;
+        document.getElementById("footer-address").textContent = CONFIG.address;
+        document.getElementById("bracket-note").textContent =
+          "The bracket updates automatically after each match.";
+      }
+
+      applyBrandColors();
+      renderPage();
+      renderBracket();
+    </script>
+  </body>
+</html>

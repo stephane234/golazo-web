@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Match Countdown</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <header class="top-bar">
+      <div class="container top-bar__inner">
+        <p class="top-bar__name" id="top-bar-name"></p>
+      </div>
+    </header>
+
+    <main>
+      <section class="section countdown-hero" aria-labelledby="countdown-heading">
+        <div class="container">
+          <p class="countdown-hero__label" id="countdown-label"></p>
+          <h1 class="countdown-hero__match" id="countdown-match"></h1>
+          <p class="countdown-hero__venue" id="countdown-venue"></p>
+
+          <div class="countdown-timer" id="countdown-timer" role="timer" aria-live="polite" aria-labelledby="countdown-heading">
+            <span class="visually-hidden" id="countdown-heading">Time until next match</span>
+            <div class="countdown-timer__unit">
+              <span class="countdown-timer__value" id="countdown-hours">00</span>
+              <span class="countdown-timer__label">Hours</span>
+            </div>
+            <span class="countdown-timer__sep" aria-hidden="true">:</span>
+            <div class="countdown-timer__unit">
+              <span class="countdown-timer__value" id="countdown-minutes">00</span>
+              <span class="countdown-timer__label">Minutes</span>
+            </div>
+            <span class="countdown-timer__sep" aria-hidden="true">:</span>
+            <div class="countdown-timer__unit">
+              <span class="countdown-timer__value" id="countdown-seconds">00</span>
+              <span class="countdown-timer__label">Seconds</span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <section class="section section--alt" aria-labelledby="upcoming-heading">
+        <div class="container">
+          <h2 class="section__title" id="upcoming-heading">Upcoming matches</h2>
+          <p class="section__subtitle" id="upcoming-subtitle"></p>
+          <div class="match-rows" id="match-rows" role="list"></div>
+        </div>
+      </section>
+
+      <section class="section" aria-labelledby="notify-heading">
+        <div class="container">
+          <h2 class="section__title" id="notify-heading">Notify me</h2>
+          <p class="section__subtitle" id="notify-subtitle"></p>
+          <div class="rsvp-card notify-card">
+            <form class="rsvp-form notify-form" id="notify-form" novalidate>
+              <div class="form-group">
+                <label for="notify-phone">Phone number</label>
+                <input
+                  type="tel"
+                  id="notify-phone"
+                  name="phone"
+                  required
+                  autocomplete="tel"
+                  placeholder="Your mobile number"
+                />
+              </div>
+              <button type="submit" class="btn" id="notify-submit">Notify me</button>
+            </form>
+            <div class="rsvp-success" id="notify-success" hidden>
+              <i class="ti ti-circle-check" aria-hidden="true"></i>
+              <p id="notify-success-text"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer footer--compact" id="footer">
+      <div class="container">
+        <p class="footer__name" id="footer-name"></p>
+        <p class="footer__address" id="footer-address"></p>
+      </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script>
+      var countdownInterval = null;
+
+      function applyBrandColors() {
+        document.documentElement.style.setProperty("--brand-color", CONFIG.brandColor);
+        document.documentElement.style.setProperty("--brand-light", CONFIG.brandLight);
+        document.documentElement.style.setProperty("--brand-text", CONFIG.brandText);
+      }
+
+      function parseMatchDateTime(timeStr) {
+        var parts = timeStr.split(" · ");
+        var datePart = parts[0];
+        var timePart = parts[1].replace(" CT", "").trim();
+        return new Date(datePart + ", 2026 " + timePart + " CDT");
+      }
+
+      function extractClockTime(timeStr) {
+        var parts = timeStr.split(" · ");
+        return parts[1] || timeStr;
+      }
+
+      function pad(value) {
+        return String(value).padStart(2, "0");
+      }
+
+      function getNextMatch() {
+        var candidates = CONFIG.matches.filter(function (match) {
+          return match.status === "soon" || match.status === "upcoming";
+        });
+
+        if (!candidates.length) {
+          return null;
+        }
+
+        return candidates
+          .map(function (match) {
+            return {
+              match: match,
+              date: parseMatchDateTime(match.time),
+            };
+          })
+          .filter(function (entry) {
+            return !isNaN(entry.date.getTime());
+          })
+          .sort(function (a, b) {
+            return a.date - b.date;
+          })[0];
+      }
+
+      function getTimeRemaining(targetDate) {
+        var diff = targetDate.getTime() - Date.now();
+
+        if (diff <= 0) {
+          return { hours: 0, minutes: 0, seconds: 0 };
+        }
+
+        var hours = Math.floor(diff / (1000 * 60 * 60));
+        var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
+        var seconds = Math.floor((diff % (1000 * 60)) / 1000);
+
+        return { hours: hours, minutes: minutes, seconds: seconds };
+      }
+
+      function getDaysBadge(match) {
+        var targetDate = parseMatchDateTime(match.time);
+        var diff = targetDate.getTime() - Date.now();
+        var clock = extractClockTime(match.time);
+        var badgeClass = "match-row__badge--" + match.status;
+        var text;
+
+        if (match.status === "live") {
+          text = "Live now";
+        } else if (match.status === "ft") {
+          text = "Full time";
+        } else if (diff <= 0) {
+          text = "Today · " + clock;
+        } else {
+          var days = Math.ceil(diff / (1000 * 60 * 60 * 24));
+          if (days === 1) {
+            text = "1 day · " + clock;
+          } else {
+            text = days + " days · " + clock;
+          }
+        }
+
+        return { text: text, badgeClass: badgeClass };
+      }
+
+      function renderHeader() {
+        document.title = CONFIG.barName + " — Match Countdown";
+        document.getElementById("top-bar-name").textContent = CONFIG.barName;
+      }
+
+      function renderCountdownHero(nextEntry) {
+        document.getElementById("countdown-label").textContent = "Next match at " + CONFIG.barName;
+
+        if (!nextEntry) {
+          document.getElementById("countdown-match").textContent = "No upcoming matches";
+          document.getElementById("countdown-venue").textContent = "";
+          document.getElementById("countdown-timer").hidden = true;
+          return;
+        }
+
+        document.getElementById("countdown-match").textContent = nextEntry.match.teams;
+        document.getElementById("countdown-venue").textContent = nextEntry.match.venue;
+
+        function tick() {
+          var remaining = getTimeRemaining(nextEntry.date);
+          document.getElementById("countdown-hours").textContent = pad(remaining.hours);
+          document.getElementById("countdown-minutes").textContent = pad(remaining.minutes);
+          document.getElementById("countdown-seconds").textContent = pad(remaining.seconds);
+        }
+
+        tick();
+        countdownInterval = setInterval(tick, 1000);
+      }
+
+      function renderMatchRows() {
+        document.getElementById("upcoming-subtitle").textContent =
+          "Every World Cup kickoff we're watching at " + CONFIG.barName + ".";
+
+        document.getElementById("match-rows").innerHTML = CONFIG.matches
+          .map(function (match) {
+            var badge = getDaysBadge(match);
+            return (
+              '<article class="match-row" role="listitem">' +
+              '<div class="match-row__info">' +
+              '<h3 class="match-row__teams">' +
+              match.teams +
+              "</h3>" +
+              '<p class="match-row__meta">' +
+              match.venue +
+              "</p>" +
+              '<p class="match-row__time">' +
+              match.time +
+              "</p>" +
+              "</div>" +
+              '<span class="match-row__badge ' +
+              badge.badgeClass +
+              '">' +
+              badge.text +
+              "</span>" +
+              "</article>"
+            );
+          })
+          .join("");
+      }
+
+      function renderNotifySection() {
+        document.getElementById("notify-subtitle").textContent =
+          "Get a text reminder before the next match kicks off.";
+        document.getElementById("notify-success-text").textContent =
+          "You're on the list! We'll text you before the next match at " + CONFIG.barName + ".";
+      }
+
+      function renderFooter() {
+        document.getElementById("footer-name").textContent = CONFIG.barName;
+        document.getElementById("footer-address").textContent = CONFIG.address;
+      }
+
+      function setupNotifyForm() {
+        var form = document.getElementById("notify-form");
+        var successEl = document.getElementById("notify-success");
+
+        form.addEventListener("submit", function (event) {
+          event.preventDefault();
+
+          if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+          }
+
+          form.hidden = true;
+          successEl.hidden = false;
+        });
+      }
+
+      applyBrandColors();
+      renderHeader();
+      renderCountdownHero(getNextMatch());
+      renderMatchRows();
+      renderNotifySection();
+      renderFooter();
+      setupNotifyForm();
+    </script>
+  </body>
+</html>

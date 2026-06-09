@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>World Cup 2026 Watch Party</title>
+    <link
+      rel="stylesheet"
+      href="https://cdn.jsdelivr.net/npm/@tabler/icons-webfont@latest/tabler-icons.min.css"
+    />
+    <link rel="stylesheet" href="styles/main.css" />
+  </head>
+  <body>
+    <header class="hero" id="hero">
+      <div class="container">
+        <h1 class="hero__title" id="hero-title"></h1>
+        <p class="hero__tagline" id="hero-tagline"></p>
+        <div class="hero__chips" id="hero-chips"></div>
+      </div>
+    </header>
+
+    <main>
+      <section class="section" id="matches-section" aria-labelledby="matches-heading">
+        <div class="container">
+          <h2 class="section__title" id="matches-heading">Today's matches</h2>
+          <p class="section__subtitle" id="matches-subtitle"></p>
+          <div class="matches" id="matches-list" role="list"></div>
+        </div>
+      </section>
+
+      <section class="section section--alt" id="specials-section" aria-labelledby="specials-heading">
+        <div class="container">
+          <h2 class="section__title" id="specials-heading">Match day specials</h2>
+          <p class="section__subtitle" id="specials-subtitle"></p>
+          <div class="specials" id="specials-list" role="list"></div>
+        </div>
+      </section>
+
+      <section class="section" id="rsvp-section" aria-labelledby="rsvp-heading">
+        <div class="container">
+          <h2 class="section__title" id="rsvp-heading">Reserve your spot</h2>
+          <p class="section__subtitle" id="rsvp-subtitle"></p>
+          <div class="rsvp-card">
+            <form class="rsvp-form" id="rsvp-form" novalidate>
+              <div class="form-group">
+                <label for="rsvp-name">Name</label>
+                <input type="text" id="rsvp-name" name="name" required autocomplete="name" />
+              </div>
+              <div class="form-group">
+                <label for="rsvp-phone">Phone</label>
+                <input type="tel" id="rsvp-phone" name="phone" required autocomplete="tel" />
+              </div>
+              <div class="form-group">
+                <label for="rsvp-party">Party size</label>
+                <select id="rsvp-party" name="party_size" required>
+                  <option value="" disabled selected>Select party size</option>
+                  <option value="1">1 guest</option>
+                  <option value="2">2 guests</option>
+                  <option value="3">3 guests</option>
+                  <option value="4">4 guests</option>
+                  <option value="5">5 guests</option>
+                  <option value="6">6 guests</option>
+                  <option value="7">7 guests</option>
+                  <option value="8">8+ guests</option>
+                </select>
+              </div>
+              <div class="form-group">
+                <label for="rsvp-match">Which match?</label>
+                <select id="rsvp-match" name="match" required></select>
+              </div>
+              <button type="submit" class="btn" id="rsvp-submit">Send RSVP</button>
+              <p class="rsvp-error" id="rsvp-error" hidden></p>
+            </form>
+            <div class="rsvp-success" id="rsvp-success" hidden>
+              <i class="ti ti-circle-check" aria-hidden="true"></i>
+              <p id="rsvp-success-text"></p>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer class="footer" id="footer">
+      <div class="container">
+        <p class="footer__name" id="footer-name"></p>
+        <p class="footer__address" id="footer-address"></p>
+        <nav class="footer__social" id="footer-social" aria-label="Social links"></nav>
+      </div>
+    </footer>
+
+    <script src="config.js"></script>
+    <script>
+      function applyBrandColors() {
+        document.documentElement.style.setProperty("--brand-color", CONFIG.brandColor);
+        document.documentElement.style.setProperty("--brand-light", CONFIG.brandLight);
+        document.documentElement.style.setProperty("--brand-text", CONFIG.brandText);
+      }
+
+      function renderHero() {
+        document.title = CONFIG.barName + " — World Cup 2026 Watch Party";
+        document.getElementById("hero-title").textContent = CONFIG.barName;
+        document.getElementById("hero-tagline").textContent = CONFIG.tagline;
+
+        const chips = [
+          { icon: "ti-map-pin", text: CONFIG.address },
+          { icon: "ti-clock", text: CONFIG.hours },
+          { icon: "ti-phone", text: CONFIG.phone, href: "tel:" + CONFIG.phone.replace(/\D/g, "") },
+        ];
+
+        document.getElementById("hero-chips").innerHTML = chips
+          .map(function (chip) {
+            const inner =
+              '<i class="ti ' +
+              chip.icon +
+              '" aria-hidden="true"></i><span>' +
+              chip.text +
+              "</span>";
+            return chip.href
+              ? '<a class="chip" href="' + chip.href + '">' + inner + "</a>"
+              : '<span class="chip">' + inner + "</span>";
+          })
+          .join("");
+      }
+
+      function renderStatusBadge(match) {
+        const status = match.status;
+
+        if (status === "live") {
+          return (
+            '<span class="match-card__badge match-card__badge--live">' +
+            '<span class="dot" aria-hidden="true"></span>Live</span>'
+          );
+        }
+
+        if (status === "soon") {
+          return (
+            '<span class="match-card__badge match-card__badge--soon">' +
+            "Soon · " +
+            match.time +
+            "</span>"
+          );
+        }
+
+        if (status === "upcoming") {
+          return (
+            '<span class="match-card__badge match-card__badge--upcoming">' +
+            "Upcoming · " +
+            match.time +
+            "</span>"
+          );
+        }
+
+        if (status === "ft") {
+          return '<span class="match-card__badge match-card__badge--ft">Full Time</span>';
+        }
+
+        return "";
+      }
+
+      function renderMatches() {
+        document.getElementById("matches-subtitle").textContent =
+          "Catch every kickoff at " + CONFIG.barName + ".";
+
+        document.getElementById("matches-list").innerHTML = CONFIG.matches
+          .map(function (match) {
+            return (
+              '<article class="match-card" role="listitem">' +
+              '<h3 class="match-card__teams">' +
+              match.teams +
+              "</h3>" +
+              '<p class="match-card__meta">' +
+              match.stage +
+              "</p>" +
+              '<p class="match-card__meta">' +
+              match.venue +
+              "</p>" +
+              renderStatusBadge(match) +
+              "</article>"
+            );
+          })
+          .join("");
+      }
+
+      function renderSpecials() {
+        document.getElementById("specials-subtitle").textContent =
+          "Food and drink deals while you watch the world's biggest tournament.";
+
+        document.getElementById("specials-list").innerHTML = CONFIG.specials
+          .map(function (special) {
+            return (
+              '<article class="special-card" role="listitem">' +
+              '<span class="special-card__icon"><i class="ti ' +
+              special.icon +
+              '" aria-hidden="true"></i></span>' +
+              '<h3 class="special-card__name">' +
+              special.name +
+              "</h3>" +
+              '<p class="special-card__desc">' +
+              special.desc +
+              "</p>" +
+              "</article>"
+            );
+          })
+          .join("");
+      }
+
+      function renderRsvpForm() {
+        document.getElementById("rsvp-subtitle").textContent =
+          "Let us know you're coming so we can save you a great seat.";
+
+        const form = document.getElementById("rsvp-form");
+        form.action = CONFIG.formEndpoint;
+        form.method = "POST";
+
+        const matchSelect = document.getElementById("rsvp-match");
+        matchSelect.innerHTML =
+          '<option value="" disabled selected>Select a match</option>' +
+          CONFIG.matches
+            .map(function (match) {
+              return (
+                '<option value="' + match.teams + '">' + match.teams + " — " + match.time + "</option>"
+              );
+            })
+            .join("");
+
+        document.getElementById("rsvp-success-text").textContent =
+          "Thanks! Your RSVP for " + CONFIG.barName + " has been received. See you on match day!";
+      }
+
+      function renderFooter() {
+        document.getElementById("footer-name").textContent = CONFIG.barName;
+        document.getElementById("footer-address").textContent = CONFIG.address;
+
+        const instagramHandle = CONFIG.instagram.replace(/^@/, "");
+        const socialLinks = [
+          {
+            icon: "ti-brand-instagram",
+            label: CONFIG.instagram,
+            href: "https://instagram.com/" + instagramHandle,
+          },
+          {
+            icon: "ti-brand-facebook",
+            label: CONFIG.facebook,
+            href: "https://facebook.com/" + CONFIG.facebook,
+          },
+        ];
+
+        document.getElementById("footer-social").innerHTML = socialLinks
+          .map(function (link) {
+            return (
+              '<a href="' +
+              link.href +
+              '" target="_blank" rel="noopener noreferrer">' +
+              '<i class="ti ' +
+              link.icon +
+              '" aria-hidden="true"></i>' +
+              link.label +
+              "</a>"
+            );
+          })
+          .join("");
+      }
+
+      function setupRsvpSubmit() {
+        const form = document.getElementById("rsvp-form");
+        const successEl = document.getElementById("rsvp-success");
+        const errorEl = document.getElementById("rsvp-error");
+        const submitBtn = document.getElementById("rsvp-submit");
+
+        form.addEventListener("submit", async function (event) {
+          event.preventDefault();
+          errorEl.hidden = true;
+
+          if (!form.checkValidity()) {
+            form.reportValidity();
+            return;
+          }
+
+          submitBtn.disabled = true;
+          submitBtn.textContent = "Sending…";
+
+          try {
+            const response = await fetch(CONFIG.formEndpoint, {
+              method: "POST",
+              body: new FormData(form),
+              headers: { Accept: "application/json" },
+            });
+
+            if (response.ok) {
+              form.hidden = true;
+              successEl.hidden = false;
+              return;
+            }
+
+            const data = await response.json().catch(function () {
+              return {};
+            });
+            throw new Error(data.error || "Something went wrong. Please try again.");
+          } catch (err) {
+            errorEl.textContent = err.message;
+            errorEl.hidden = false;
+            submitBtn.disabled = false;
+            submitBtn.textContent = "Send RSVP";
+          }
+        });
+      }
+
+      applyBrandColors();
+      renderHero();
+      renderMatches();
+      renderSpecials();
+      renderRsvpForm();
+      renderFooter();
+      setupRsvpSubmit();
+    </script>
+  </body>
+</html>
