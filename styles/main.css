@@ -803,20 +803,19 @@ a {
 }
 
 /* Bracket page */
-.bracket-intro {
-  padding-bottom: 1.5rem;
-}
-
-.bracket-notice {
-  margin: 1.25rem 0 0;
-  padding: 1rem 1.25rem;
+.bracket-banner {
+  margin: 0;
+  padding: 0.9rem 1.25rem;
   text-align: center;
-  color: var(--text-muted);
-  background: var(--surface-muted);
-  border-radius: var(--radius);
-  border: var(--border);
+  background: #fef3c7;
+  color: #92400e;
+  border-bottom: 1px solid rgba(245, 158, 11, 0.35);
   font-size: 0.9375rem;
   font-weight: 600;
+}
+
+.bracket-intro {
+  padding-bottom: 1.5rem;
 }
 
 .bracket-body {

@@ -38,15 +38,16 @@
       </div>
     </nav>
 
+    <p class="bracket-banner">
+      Knockout stage begins July 4, 2026 — check back as teams advance.
+    </p>
+
     <main>
       <section class="section bracket-intro" aria-labelledby="bracket-heading">
         <div class="container">
           <p class="section-label">Knockout stage</p>
           <h1 class="section__title" id="bracket-heading">World Cup 2026 Bracket</h1>
           <p class="section__subtitle" id="bracket-subtitle"></p>
-          <p class="bracket-notice">
-            Knockout stage begins July 4, 2026 — check back as teams advance.
-          </p>
         </div>
       </section>
 
@@ -73,13 +74,7 @@
     <script src="js/shared.js"></script>
     <script>
       function createTbdMatch() {
-        return {
-          home: "TBD",
-          away: "TBD",
-          homeScore: null,
-          awayScore: null,
-          winner: null,
-        };
+        return { home: "TBD", away: "TBD" };
       }
 
       function createTbdMatches(count) {
@@ -101,48 +96,20 @@
         }),
       };
 
-      function getTeamCardClass(team, winner) {
-        if (team === "TBD" || !winner) {
-          return "team-card team-card--tbd";
-        }
-        if (winner && team === winner) {
-          return "team-card team-card--winner";
-        }
-        if (winner && team !== winner) {
-          return "team-card team-card--loser";
-        }
-        return "team-card team-card--tbd";
-      }
-
-      function renderTeamCard(team, score, winner) {
-        var cardClass = getTeamCardClass(team, winner);
-        var isWinner = winner && team === winner;
-        var scoreHtml =
-          score !== null && score !== undefined
-            ? '<span class="team-card__score">' + score + "</span>"
-            : "";
-
+      function renderTeamCard() {
         return (
-          '<div class="' +
-          cardClass +
-          '">' +
-          '<span class="team-card__name">' +
-          team +
-          "</span>" +
-          (isWinner
-            ? '<i class="ti ti-circle-check team-card__check" aria-label="Winner"></i>'
-            : "") +
-          scoreHtml +
+          '<div class="team-card team-card--tbd">' +
+          '<span class="team-card__name">TBD</span>' +
           "</div>"
         );
       }
 
-      function renderMatch(match) {
+      function renderMatch() {
         return (
           '<div class="bracket-match">' +
-          renderTeamCard(match.home, match.homeScore, match.winner) +
+          renderTeamCard() +
           '<span class="bracket-match__arrow" aria-hidden="true"><i class="ti ti-arrow-right"></i></span>' +
-          renderTeamCard(match.away, match.awayScore, match.winner) +
+          renderTeamCard() +
           "</div>"
         );
       }
