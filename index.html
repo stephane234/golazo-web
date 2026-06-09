@@ -19,9 +19,31 @@
       </div>
     </header>
 
+    <nav class="site-nav" aria-label="Site navigation">
+      <div class="container site-nav__inner">
+        <a href="index.html" class="site-nav__tab site-nav__tab--active">
+          <i class="ti ti-calendar-event" aria-hidden="true"></i>
+          <span>Watch Party</span>
+        </a>
+        <a href="scores.html" class="site-nav__tab">
+          <i class="ti ti-circle" aria-hidden="true"></i>
+          <span>Live Scores</span>
+        </a>
+        <a href="bracket.html" class="site-nav__tab">
+          <i class="ti ti-tournament" aria-hidden="true"></i>
+          <span>Bracket</span>
+        </a>
+        <a href="countdown.html" class="site-nav__tab">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          <span>Countdown</span>
+        </a>
+      </div>
+    </nav>
+
     <main>
       <section class="section" id="matches-section" aria-labelledby="matches-heading">
         <div class="container">
+          <p class="section-label">Match schedule</p>
           <h2 class="section__title" id="matches-heading">Today's matches</h2>
           <p class="section__subtitle" id="matches-subtitle"></p>
           <div class="match-filters" id="match-filters" role="toolbar" aria-label="Filter matches"></div>
@@ -32,6 +54,7 @@
 
       <section class="section section--alt" id="specials-section" aria-labelledby="specials-heading">
         <div class="container">
+          <p class="section-label">Food &amp; drink</p>
           <h2 class="section__title" id="specials-heading">Match day specials</h2>
           <p class="section__subtitle" id="specials-subtitle"></p>
           <div class="specials" id="specials-list" role="list"></div>
@@ -40,6 +63,7 @@
 
       <section class="section" id="rsvp-section" aria-labelledby="rsvp-heading">
         <div class="container">
+          <p class="section-label">Reservations</p>
           <h2 class="section__title" id="rsvp-heading">Reserve your spot</h2>
           <p class="section__subtitle" id="rsvp-subtitle"></p>
           <div class="rsvp-card">
@@ -87,19 +111,15 @@
         <p class="footer__name" id="footer-name"></p>
         <p class="footer__address" id="footer-address"></p>
         <nav class="footer__social" id="footer-social" aria-label="Social links"></nav>
+        <p class="footer__meta" id="footer-meta" hidden></p>
       </div>
     </footer>
 
     <script src="config.js"></script>
+    <script src="js/shared.js"></script>
     <script>
-      function applyBrandColors() {
-        document.documentElement.style.setProperty("--brand-color", CONFIG.brandColor);
-        document.documentElement.style.setProperty("--brand-light", CONFIG.brandLight);
-        document.documentElement.style.setProperty("--brand-text", CONFIG.brandText);
-      }
-
       function renderHero() {
-        document.title = CONFIG.barName + " — World Cup 2026 Watch Party";
+        setPageTitle("World Cup 2026 Watch Party");
         document.getElementById("hero-title").textContent = CONFIG.barName;
         document.getElementById("hero-tagline").textContent = CONFIG.tagline;
 
@@ -446,37 +466,7 @@
       }
 
       function renderFooter() {
-        document.getElementById("footer-name").textContent = CONFIG.barName;
-        document.getElementById("footer-address").textContent = CONFIG.address;
-
-        const instagramHandle = CONFIG.instagram.replace(/^@/, "");
-        const socialLinks = [
-          {
-            icon: "ti-brand-instagram",
-            label: CONFIG.instagram,
-            href: "https://instagram.com/" + instagramHandle,
-          },
-          {
-            icon: "ti-brand-facebook",
-            label: CONFIG.facebook,
-            href: "https://facebook.com/" + CONFIG.facebook,
-          },
-        ];
-
-        document.getElementById("footer-social").innerHTML = socialLinks
-          .map(function (link) {
-            return (
-              '<a href="' +
-              link.href +
-              '" target="_blank" rel="noopener noreferrer">' +
-              '<i class="ti ' +
-              link.icon +
-              '" aria-hidden="true"></i>' +
-              link.label +
-              "</a>"
-            );
-          })
-          .join("");
+        renderSiteFooter();
       }
 
       function setupRsvpSubmit() {

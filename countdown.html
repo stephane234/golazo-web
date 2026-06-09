@@ -13,19 +13,55 @@
   <body>
     <header class="top-bar">
       <div class="container top-bar__inner">
-        <p class="top-bar__name" id="top-bar-name"></p>
+        <p class="top-bar__name">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          <span id="top-bar-name"></span>
+        </p>
       </div>
     </header>
+
+    <nav class="site-nav" aria-label="Site navigation">
+      <div class="container site-nav__inner">
+        <a href="index.html" class="site-nav__tab">
+          <i class="ti ti-calendar-event" aria-hidden="true"></i>
+          <span>Watch Party</span>
+        </a>
+        <a href="scores.html" class="site-nav__tab">
+          <i class="ti ti-circle" aria-hidden="true"></i>
+          <span>Live Scores</span>
+        </a>
+        <a href="bracket.html" class="site-nav__tab">
+          <i class="ti ti-tournament" aria-hidden="true"></i>
+          <span>Bracket</span>
+        </a>
+        <a href="countdown.html" class="site-nav__tab site-nav__tab--active">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          <span>Countdown</span>
+        </a>
+      </div>
+    </nav>
 
     <main>
       <section class="section countdown-hero" aria-labelledby="countdown-heading">
         <div class="container">
-          <p class="countdown-hero__label" id="countdown-label"></p>
+          <p class="section-label countdown-hero__label" id="countdown-label"></p>
           <h1 class="countdown-hero__match" id="countdown-match"></h1>
+          <p class="countdown-hero__stage" id="countdown-stage"></p>
           <p class="countdown-hero__venue" id="countdown-venue"></p>
 
-          <div class="countdown-timer" id="countdown-timer" role="timer" aria-live="polite" aria-labelledby="countdown-heading">
+          <div
+            class="countdown-timer"
+            id="countdown-timer"
+            role="timer"
+            aria-live="polite"
+            aria-labelledby="countdown-heading"
+          >
             <span class="visually-hidden" id="countdown-heading">Time until next match</span>
+            <div class="countdown-timer__unit">
+              <span class="countdown-timer__value" id="countdown-days">00</span>
+              <span class="countdown-timer__label">Days</span>
+            </div>
+            <span class="countdown-timer__sep" aria-hidden="true">:</span>
             <div class="countdown-timer__unit">
               <span class="countdown-timer__value" id="countdown-hours">00</span>
               <span class="countdown-timer__label">Hours</span>
@@ -46,15 +82,17 @@
 
       <section class="section section--alt" aria-labelledby="upcoming-heading">
         <div class="container">
+          <p class="section-label">Full schedule</p>
           <h2 class="section__title" id="upcoming-heading">Upcoming matches</h2>
           <p class="section__subtitle" id="upcoming-subtitle"></p>
-          <div class="match-rows" id="match-rows" role="list"></div>
+          <div id="match-rows"></div>
         </div>
       </section>
 
       <section class="section" aria-labelledby="notify-heading">
         <div class="container">
-          <h2 class="section__title" id="notify-heading">Notify me</h2>
+          <p class="section-label">Stay updated</p>
+          <h2 class="section__title" id="notify-heading">Notify me before the next match</h2>
           <p class="section__subtitle" id="notify-subtitle"></p>
           <div class="rsvp-card notify-card">
             <form class="rsvp-form notify-form" id="notify-form" novalidate>
@@ -80,122 +118,172 @@
       </section>
     </main>
 
-    <footer class="footer footer--compact" id="footer">
+    <footer class="footer" id="footer">
       <div class="container">
         <p class="footer__name" id="footer-name"></p>
         <p class="footer__address" id="footer-address"></p>
+        <nav class="footer__social" id="footer-social" aria-label="Social links"></nav>
+        <p class="footer__meta" id="footer-meta" hidden></p>
       </div>
     </footer>
 
     <script src="config.js"></script>
+    <script src="js/shared.js"></script>
     <script>
       var countdownInterval = null;
 
-      function applyBrandColors() {
-        document.documentElement.style.setProperty("--brand-color", CONFIG.brandColor);
-        document.documentElement.style.setProperty("--brand-light", CONFIG.brandLight);
-        document.documentElement.style.setProperty("--brand-text", CONFIG.brandText);
-      }
+      function parseMatchDateTime(match) {
+        var timePart = match.time.split(" · ")[1];
+        if (!timePart) {
+          return new Date(NaN);
+        }
 
-      function parseMatchDateTime(timeStr) {
-        var parts = timeStr.split(" · ");
-        var datePart = parts[0];
-        var timePart = parts[1].replace(" CT", "").trim();
-        return new Date(datePart + ", 2026 " + timePart + " CDT");
-      }
+        var cleaned = timePart.replace(" CT", "").trim();
+        var dateParts = match.date.split("-");
+        var year = Number(dateParts[0]);
+        var month = Number(dateParts[1]) - 1;
+        var day = Number(dateParts[2]);
+        var timeMatch = cleaned.match(/^(\d+):(\d+)\s*(AM|PM)$/i);
 
-      function extractClockTime(timeStr) {
-        var parts = timeStr.split(" · ");
-        return parts[1] || timeStr;
+        if (!timeMatch) {
+          return new Date(NaN);
+        }
+
+        var hour = Number(timeMatch[1]);
+        var minute = Number(timeMatch[2]);
+        var meridiem = timeMatch[3].toUpperCase();
+
+        if (meridiem === "PM" && hour !== 12) {
+          hour += 12;
+        }
+        if (meridiem === "AM" && hour === 12) {
+          hour = 0;
+        }
+
+        return new Date(year, month, day, hour, minute, 0);
       }
 
       function pad(value) {
         return String(value).padStart(2, "0");
       }
 
-      function getNextMatch() {
-        var candidates = CONFIG.matches.filter(function (match) {
-          return match.status === "soon" || match.status === "upcoming";
+      function formatDateHeader(dateKey) {
+        var parts = dateKey.split("-");
+        var date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return date.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
         });
+      }
 
-        if (!candidates.length) {
-          return null;
-        }
-
-        return candidates
+      function getNextMatch() {
+        var candidates = CONFIG.matches
+          .filter(function (match) {
+            return match.status === "soon" || match.status === "upcoming";
+          })
           .map(function (match) {
             return {
               match: match,
-              date: parseMatchDateTime(match.time),
+              kickoff: parseMatchDateTime(match),
             };
           })
           .filter(function (entry) {
-            return !isNaN(entry.date.getTime());
+            return !isNaN(entry.kickoff.getTime());
           })
           .sort(function (a, b) {
-            return a.date - b.date;
-          })[0];
+            if (a.match.date !== b.match.date) {
+              return a.match.date.localeCompare(b.match.date);
+            }
+            return a.kickoff - b.kickoff;
+          });
+
+        return candidates.length ? candidates[0] : null;
       }
 
       function getTimeRemaining(targetDate) {
         var diff = targetDate.getTime() - Date.now();
 
         if (diff <= 0) {
-          return { hours: 0, minutes: 0, seconds: 0 };
+          return { days: 0, hours: 0, minutes: 0, seconds: 0 };
         }
 
-        var hours = Math.floor(diff / (1000 * 60 * 60));
+        var days = Math.floor(diff / (1000 * 60 * 60 * 24));
+        var hours = Math.floor((diff % (1000 * 60 * 60 * 24)) / (1000 * 60 * 60));
         var minutes = Math.floor((diff % (1000 * 60 * 60)) / (1000 * 60));
         var seconds = Math.floor((diff % (1000 * 60)) / 1000);
 
-        return { hours: hours, minutes: minutes, seconds: seconds };
+        return { days: days, hours: hours, minutes: minutes, seconds: seconds };
       }
 
-      function getDaysBadge(match) {
-        var targetDate = parseMatchDateTime(match.time);
-        var diff = targetDate.getTime() - Date.now();
-        var clock = extractClockTime(match.time);
-        var badgeClass = "match-row__badge--" + match.status;
-        var text;
+      function getTimeBadge(match) {
+        var clock = match.time.split(" · ")[1] || match.time;
 
         if (match.status === "live") {
-          text = "Live now";
-        } else if (match.status === "ft") {
-          text = "Full time";
-        } else if (diff <= 0) {
-          text = "Today · " + clock;
-        } else {
-          var days = Math.ceil(diff / (1000 * 60 * 60 * 24));
-          if (days === 1) {
-            text = "1 day · " + clock;
-          } else {
-            text = days + " days · " + clock;
-          }
+          return { badgeClass: "match-row__badge--live", text: "Live" };
         }
+        if (match.status === "ft") {
+          return { badgeClass: "match-row__badge--ft", text: "Full Time" };
+        }
+        if (match.status === "soon") {
+          return { badgeClass: "match-row__badge--soon", text: clock };
+        }
+        return { badgeClass: "match-row__badge--upcoming", text: clock };
+      }
 
-        return { text: text, badgeClass: badgeClass };
+      function renderMatchRow(match) {
+        var badge = getTimeBadge(match);
+
+        return (
+          '<article class="match-row" role="listitem">' +
+          '<div class="match-row__info">' +
+          '<h3 class="match-row__teams">' +
+          match.teams +
+          "</h3>" +
+          '<p class="match-row__meta">' +
+          match.venue +
+          "</p>" +
+          "</div>" +
+          '<span class="match-row__badge ' +
+          badge.badgeClass +
+          '">' +
+          badge.text +
+          "</span>" +
+          "</article>"
+        );
       }
 
       function renderHeader() {
-        document.title = CONFIG.barName + " — Match Countdown";
+        setPageTitle("Match Countdown");
         document.getElementById("top-bar-name").textContent = CONFIG.barName;
       }
 
       function renderCountdownHero(nextEntry) {
-        document.getElementById("countdown-label").textContent = "Next match at " + CONFIG.barName;
+        document.getElementById("countdown-label").textContent =
+          "Next match at " + CONFIG.barName;
+
+        if (countdownInterval) {
+          clearInterval(countdownInterval);
+          countdownInterval = null;
+        }
 
         if (!nextEntry) {
           document.getElementById("countdown-match").textContent = "No upcoming matches";
+          document.getElementById("countdown-stage").textContent = "";
           document.getElementById("countdown-venue").textContent = "";
           document.getElementById("countdown-timer").hidden = true;
           return;
         }
 
         document.getElementById("countdown-match").textContent = nextEntry.match.teams;
+        document.getElementById("countdown-stage").textContent = nextEntry.match.stage;
         document.getElementById("countdown-venue").textContent = nextEntry.match.venue;
+        document.getElementById("countdown-timer").hidden = false;
 
         function tick() {
-          var remaining = getTimeRemaining(nextEntry.date);
+          var remaining = getTimeRemaining(nextEntry.kickoff);
+          document.getElementById("countdown-days").textContent = pad(remaining.days);
           document.getElementById("countdown-hours").textContent = pad(remaining.hours);
           document.getElementById("countdown-minutes").textContent = pad(remaining.minutes);
           document.getElementById("countdown-seconds").textContent = pad(remaining.seconds);
@@ -209,28 +297,27 @@
         document.getElementById("upcoming-subtitle").textContent =
           "Every World Cup kickoff we're watching at " + CONFIG.barName + ".";
 
-        document.getElementById("match-rows").innerHTML = CONFIG.matches
-          .map(function (match) {
-            var badge = getDaysBadge(match);
+        var grouped = {};
+
+        CONFIG.matches.forEach(function (match) {
+          if (!grouped[match.date]) {
+            grouped[match.date] = [];
+          }
+          grouped[match.date].push(match);
+        });
+
+        document.getElementById("match-rows").innerHTML = Object.keys(grouped)
+          .sort()
+          .map(function (dateKey) {
             return (
-              '<article class="match-row" role="listitem">' +
-              '<div class="match-row__info">' +
-              '<h3 class="match-row__teams">' +
-              match.teams +
+              '<section class="matches-day">' +
+              '<h3 class="matches-day__heading">' +
+              formatDateHeader(dateKey) +
               "</h3>" +
-              '<p class="match-row__meta">' +
-              match.venue +
-              "</p>" +
-              '<p class="match-row__time">' +
-              match.time +
-              "</p>" +
+              '<div class="match-rows" role="list">' +
+              grouped[dateKey].map(renderMatchRow).join("") +
               "</div>" +
-              '<span class="match-row__badge ' +
-              badge.badgeClass +
-              '">' +
-              badge.text +
-              "</span>" +
-              "</article>"
+              "</section>"
             );
           })
           .join("");
@@ -244,8 +331,7 @@
       }
 
       function renderFooter() {
-        document.getElementById("footer-name").textContent = CONFIG.barName;
-        document.getElementById("footer-address").textContent = CONFIG.address;
+        renderSiteFooter();
       }
 
       function setupNotifyForm() {

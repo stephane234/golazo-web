@@ -20,10 +20,33 @@
       </div>
     </header>
 
+    <nav class="site-nav" aria-label="Site navigation">
+      <div class="container site-nav__inner">
+        <a href="index.html" class="site-nav__tab">
+          <i class="ti ti-calendar-event" aria-hidden="true"></i>
+          <span>Watch Party</span>
+        </a>
+        <a href="scores.html" class="site-nav__tab site-nav__tab--active">
+          <i class="ti ti-circle" aria-hidden="true"></i>
+          <span>Live Scores</span>
+        </a>
+        <a href="bracket.html" class="site-nav__tab">
+          <i class="ti ti-tournament" aria-hidden="true"></i>
+          <span>Bracket</span>
+        </a>
+        <a href="countdown.html" class="site-nav__tab">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          <span>Countdown</span>
+        </a>
+      </div>
+    </nav>
+
     <main>
       <section class="section scores-section" aria-labelledby="scores-heading">
         <div class="container">
-          <h1 class="visually-hidden" id="scores-heading">World Cup 2026 live scores</h1>
+          <p class="section-label">World Cup 2026</p>
+          <h1 class="section__title" id="scores-heading">Live scores</h1>
+          <p class="section__subtitle" id="scores-subtitle"></p>
           <p class="scores-notice" id="scores-notice" hidden></p>
           <div class="scores-grid" id="scores-grid" role="list"></div>
           <p class="scores-empty" id="scores-empty" hidden>No matches to display right now.</p>
@@ -32,26 +55,23 @@
       </section>
     </main>
 
-    <footer class="footer footer--compact scores-footer" id="footer">
+    <footer class="footer" id="footer">
       <div class="container">
-        <p class="scores-footer__powered" id="footer-powered"></p>
-        <p class="scores-footer__updated" id="footer-updated"></p>
+        <p class="footer__name" id="footer-name"></p>
+        <p class="footer__address" id="footer-address"></p>
+        <nav class="footer__social" id="footer-social" aria-label="Social links"></nav>
+        <p class="footer__meta" id="footer-meta" hidden></p>
       </div>
     </footer>
 
     <script src="config.js"></script>
+    <script src="js/shared.js"></script>
     <script>
       var API_URL =
         "https://api.football-data.org/v4/competitions/WC/matches?status=LIVE,IN_PLAY,FINISHED,SCHEDULED";
       var API_KEY = "YOUR_API_KEY";
       var REFRESH_MS = 60000;
       var refreshTimer = null;
-
-      function applyBrandColors() {
-        document.documentElement.style.setProperty("--brand-color", CONFIG.brandColor);
-        document.documentElement.style.setProperty("--brand-light", CONFIG.brandLight);
-        document.documentElement.style.setProperty("--brand-text", CONFIG.brandText);
-      }
 
       function isApiKeyMissing() {
         return !API_KEY || API_KEY === "YOUR_API_KEY";
@@ -229,23 +249,26 @@
       }
 
       function updateFooter(updatedAt) {
-        document.title = CONFIG.barName + " — Live Scores";
-        document.getElementById("footer-powered").textContent = "Powered by " + CONFIG.barName;
-        document.getElementById("footer-updated").textContent =
+        setPageTitle("Live Scores");
+        renderSiteFooter(
           "Last updated " +
-          updatedAt.toLocaleString("en-US", {
-            month: "short",
-            day: "numeric",
-            year: "numeric",
-            hour: "numeric",
-            minute: "2-digit",
-            second: "2-digit",
-            timeZoneName: "short",
-          });
+            updatedAt.toLocaleString("en-US", {
+              month: "short",
+              day: "numeric",
+              year: "numeric",
+              hour: "numeric",
+              minute: "2-digit",
+              second: "2-digit",
+              timeZoneName: "short",
+            })
+        );
       }
 
-      function getFallbackMatches() {
-        return CONFIG.matches.map(normalizeConfigMatch);
+      function initScoresPage() {
+        setPageTitle("Live Scores");
+        document.getElementById("scores-subtitle").textContent =
+          "Real-time World Cup scores at " + CONFIG.barName + ".";
+        renderSiteFooter();
       }
 
       async function loadScores() {
@@ -283,11 +306,16 @@
         }
       }
 
+      function getFallbackMatches() {
+        return CONFIG.matches.map(normalizeConfigMatch);
+      }
+
       function startAutoRefresh() {
         refreshTimer = setInterval(loadScores, REFRESH_MS);
       }
 
       applyBrandColors();
+      initScoresPage();
       loadScores();
       startAutoRefresh();
     </script>

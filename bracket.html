@@ -17,9 +17,31 @@
       </div>
     </header>
 
+    <nav class="site-nav" aria-label="Site navigation">
+      <div class="container site-nav__inner">
+        <a href="index.html" class="site-nav__tab">
+          <i class="ti ti-calendar-event" aria-hidden="true"></i>
+          <span>Watch Party</span>
+        </a>
+        <a href="scores.html" class="site-nav__tab">
+          <i class="ti ti-circle" aria-hidden="true"></i>
+          <span>Live Scores</span>
+        </a>
+        <a href="bracket.html" class="site-nav__tab site-nav__tab--active">
+          <i class="ti ti-tournament" aria-hidden="true"></i>
+          <span>Bracket</span>
+        </a>
+        <a href="countdown.html" class="site-nav__tab">
+          <i class="ti ti-clock" aria-hidden="true"></i>
+          <span>Countdown</span>
+        </a>
+      </div>
+    </nav>
+
     <main>
       <section class="section bracket-intro" aria-labelledby="bracket-heading">
         <div class="container">
+          <p class="section-label">Knockout stage</p>
           <h1 class="section__title" id="bracket-heading">World Cup 2026 Bracket</h1>
           <p class="section__subtitle" id="bracket-subtitle"></p>
         </div>
@@ -28,19 +50,22 @@
       <section class="section section--alt bracket-body" aria-label="Tournament bracket">
         <div class="container">
           <div class="bracket" id="bracket"></div>
+          <p class="bracket-update-note">Bracket updates after each match result.</p>
         </div>
       </section>
     </main>
 
-    <footer class="footer footer--compact" id="footer">
+    <footer class="footer" id="footer">
       <div class="container">
         <p class="footer__name" id="footer-name"></p>
         <p class="footer__address" id="footer-address"></p>
-        <p class="bracket-footer-note" id="bracket-note"></p>
+        <nav class="footer__social" id="footer-social" aria-label="Social links"></nav>
+        <p class="footer__meta" id="footer-meta" hidden></p>
       </div>
     </footer>
 
     <script src="config.js"></script>
+    <script src="js/shared.js"></script>
     <script>
       var BRACKET = {
         quarterfinals: [
@@ -57,31 +82,29 @@
           home: "Argentina",
           away: "TBD",
           winner: null,
-          meta: "July 19 · MetLife Stadium",
+          meta: "July 19 · MetLife Stadium, New Jersey",
         },
       };
 
-      function applyBrandColors() {
-        document.documentElement.style.setProperty("--brand-color", CONFIG.brandColor);
-        document.documentElement.style.setProperty("--brand-light", CONFIG.brandLight);
-        document.documentElement.style.setProperty("--brand-text", CONFIG.brandText);
+      function isTbdTeam(team) {
+        return team === "TBD";
       }
 
-      function getTeamCardClass(team, winner, isTbd) {
-        if (isTbd) {
-          return "team-card team-card--dimmed";
+      function getTeamCardClass(team, winner) {
+        if (isTbdTeam(team)) {
+          return "team-card team-card--tbd";
         }
         if (winner && team === winner) {
           return "team-card team-card--winner";
         }
         if (winner && team !== winner) {
-          return "team-card team-card--dimmed";
+          return "team-card team-card--loser";
         }
         return "team-card";
       }
 
-      function renderTeamCard(team, score, winner, isTbd) {
-        var cardClass = getTeamCardClass(team, winner, isTbd);
+      function renderTeamCard(team, score, winner) {
+        var cardClass = getTeamCardClass(team, winner);
         var isWinner = winner && team === winner;
         var scoreHtml =
           score !== null && score !== undefined
@@ -104,14 +127,11 @@
       }
 
       function renderMatch(match) {
-        var homeTbd = match.home === "TBD";
-        var awayTbd = match.away === "TBD";
-
         return (
           '<div class="bracket-match">' +
-          renderTeamCard(match.home, match.homeScore, match.winner, homeTbd) +
+          renderTeamCard(match.home, match.homeScore, match.winner) +
           '<span class="bracket-match__arrow" aria-hidden="true"><i class="ti ti-arrow-right"></i></span>' +
-          renderTeamCard(match.away, match.awayScore, match.winner, awayTbd) +
+          renderTeamCard(match.away, match.awayScore, match.winner) +
           "</div>"
         );
       }
@@ -123,7 +143,7 @@
 
         return (
           '<section class="bracket-round">' +
-          "<h2 class=\"bracket-round__title\">" +
+          '<h2 class="section-label bracket-round__title">' +
           title +
           "</h2>" +
           metaHtml +
@@ -142,14 +162,11 @@
       }
 
       function renderPage() {
-        document.title = CONFIG.barName + " — World Cup 2026 Bracket";
+        setPageTitle("World Cup 2026 Bracket");
         document.getElementById("top-bar-name").textContent = CONFIG.barName;
         document.getElementById("bracket-subtitle").textContent =
           "Follow the knockout stage at " + CONFIG.barName + ".";
-        document.getElementById("footer-name").textContent = CONFIG.barName;
-        document.getElementById("footer-address").textContent = CONFIG.address;
-        document.getElementById("bracket-note").textContent =
-          "The bracket updates automatically after each match.";
+        renderSiteFooter();
       }
 
       applyBrandColors();
