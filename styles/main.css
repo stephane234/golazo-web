@@ -807,6 +807,18 @@ a {
   padding-bottom: 1.5rem;
 }
 
+.bracket-notice {
+  margin: 1.25rem 0 0;
+  padding: 1rem 1.25rem;
+  text-align: center;
+  color: var(--text-muted);
+  background: var(--surface-muted);
+  border-radius: var(--radius);
+  border: var(--border);
+  font-size: 0.9375rem;
+  font-weight: 600;
+}
+
 .bracket-body {
   padding-top: 0;
 }

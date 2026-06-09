@@ -44,13 +44,18 @@
           <p class="section-label">Knockout stage</p>
           <h1 class="section__title" id="bracket-heading">World Cup 2026 Bracket</h1>
           <p class="section__subtitle" id="bracket-subtitle"></p>
+          <p class="bracket-notice">
+            Knockout stage begins July 4, 2026 — check back as teams advance.
+          </p>
         </div>
       </section>
 
       <section class="section section--alt bracket-body" aria-label="Tournament bracket">
         <div class="container">
           <div class="bracket" id="bracket"></div>
-          <p class="bracket-update-note">Bracket updates after each match result.</p>
+          <p class="bracket-update-note">
+            The bracket is updated manually after each match result.
+          </p>
         </div>
       </section>
     </main>
@@ -67,31 +72,37 @@
     <script src="config.js"></script>
     <script src="js/shared.js"></script>
     <script>
-      var BRACKET = {
-        quarterfinals: [
-          { home: "Argentina", homeScore: 3, away: "England", awayScore: 1, winner: "Argentina" },
-          { home: "Brazil", homeScore: 2, away: "Germany", awayScore: 0, winner: "Brazil" },
-          { home: "Spain", homeScore: 1, away: "Portugal", awayScore: 0, winner: "Spain" },
-          { home: "France", homeScore: 2, away: "Morocco", awayScore: 1, winner: "France" },
-        ],
-        semifinals: [
-          { home: "Argentina", homeScore: 2, away: "Brazil", awayScore: 1, winner: "Argentina" },
-          { home: "Spain", homeScore: null, away: "France", awayScore: null, winner: null },
-        ],
-        final: {
-          home: "Argentina",
+      function createTbdMatch() {
+        return {
+          home: "TBD",
           away: "TBD",
+          homeScore: null,
+          awayScore: null,
           winner: null,
-          meta: "July 19 · MetLife Stadium, New Jersey",
-        },
-      };
-
-      function isTbdTeam(team) {
-        return team === "TBD";
+        };
       }
 
+      function createTbdMatches(count) {
+        var matches = [];
+        for (var i = 0; i < count; i++) {
+          matches.push(createTbdMatch());
+        }
+        return matches;
+      }
+
+      var BRACKET = {
+        roundOf32: createTbdMatches(16),
+        roundOf16: createTbdMatches(8),
+        quarterfinals: createTbdMatches(4),
+        semifinals: createTbdMatches(2),
+        thirdPlace: createTbdMatch(),
+        final: Object.assign(createTbdMatch(), {
+          meta: "July 19 · MetLife Stadium, New Jersey",
+        }),
+      };
+
       function getTeamCardClass(team, winner) {
-        if (isTbdTeam(team)) {
+        if (team === "TBD" || !winner) {
           return "team-card team-card--tbd";
         }
         if (winner && team === winner) {
@@ -100,7 +111,7 @@
         if (winner && team !== winner) {
           return "team-card team-card--loser";
         }
-        return "team-card";
+        return "team-card team-card--tbd";
       }
 
       function renderTeamCard(team, score, winner) {
@@ -156,8 +167,11 @@
 
       function renderBracket() {
         document.getElementById("bracket").innerHTML =
+          renderRound("Round of 32", BRACKET.roundOf32, "32 teams") +
+          renderRound("Round of 16", BRACKET.roundOf16) +
           renderRound("Quarterfinals", BRACKET.quarterfinals) +
           renderRound("Semifinals", BRACKET.semifinals) +
+          renderRound("Third Place", [BRACKET.thirdPlace]) +
           renderRound("Final", [BRACKET.final], BRACKET.final.meta);
       }
 
