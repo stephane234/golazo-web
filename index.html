@@ -24,7 +24,9 @@
         <div class="container">
           <h2 class="section__title" id="matches-heading">Today's matches</h2>
           <p class="section__subtitle" id="matches-subtitle"></p>
-          <div class="matches" id="matches-list" role="list"></div>
+          <div class="match-filters" id="match-filters" role="toolbar" aria-label="Filter matches"></div>
+          <div id="matches-list"></div>
+          <p class="matches-empty" id="matches-empty" hidden>No matches match this filter.</p>
         </div>
       </section>
 
@@ -123,16 +125,14 @@
       }
 
       function renderStatusBadge(match) {
-        const status = match.status;
-
-        if (status === "live") {
+        if (match.status === "live") {
           return (
             '<span class="match-card__badge match-card__badge--live">' +
             '<span class="dot" aria-hidden="true"></span>Live</span>'
           );
         }
 
-        if (status === "soon") {
+        if (match.status === "soon") {
           return (
             '<span class="match-card__badge match-card__badge--soon">' +
             "Soon · " +
@@ -141,7 +141,7 @@
           );
         }
 
-        if (status === "upcoming") {
+        if (match.status === "upcoming") {
           return (
             '<span class="match-card__badge match-card__badge--upcoming">' +
             "Upcoming · " +
@@ -150,35 +150,253 @@
           );
         }
 
-        if (status === "ft") {
+        if (match.status === "ft") {
           return '<span class="match-card__badge match-card__badge--ft">Full Time</span>';
         }
 
         return "";
       }
 
+      function renderMatchCard(match) {
+        return (
+          '<article class="match-card" role="listitem">' +
+          '<h3 class="match-card__teams">' +
+          match.teams +
+          "</h3>" +
+          '<p class="match-card__meta">' +
+          match.stage +
+          "</p>" +
+          '<p class="match-card__meta">' +
+          match.venue +
+          "</p>" +
+          renderStatusBadge(match) +
+          "</article>"
+        );
+      }
+
+      function formatDateHeader(dateKey) {
+        const parts = dateKey.split("-");
+        const date = new Date(Number(parts[0]), Number(parts[1]) - 1, Number(parts[2]));
+        return date.toLocaleDateString("en-US", {
+          weekday: "long",
+          month: "long",
+          day: "numeric",
+          year: "numeric",
+        });
+      }
+
+      function getTodayKey() {
+        return new Date().toLocaleDateString("en-CA");
+      }
+
+      function isMatchToday(match) {
+        return match.date === getTodayKey();
+      }
+
+      function isMatchUpcoming(match) {
+        return match.date > getTodayKey();
+      }
+
+      function isKnockoutStage(stage) {
+        const value = stage.toLowerCase();
+        return (
+          value.indexOf("round of") !== -1 ||
+          value.indexOf("quarter") !== -1 ||
+          value.indexOf("semi") !== -1 ||
+          value.indexOf("final") !== -1 ||
+          value.indexOf("knockout") !== -1
+        );
+      }
+
+      function filterMatches(filterKey) {
+        return CONFIG.matches.filter(function (match) {
+          if (filterKey === "all") {
+            return true;
+          }
+          if (filterKey === "today") {
+            return isMatchToday(match);
+          }
+          if (filterKey === "usa") {
+            return match.teams.indexOf("USA") !== -1;
+          }
+          if (filterKey === "group") {
+            return match.stage.indexOf("Group") === 0;
+          }
+          if (filterKey === "knockout") {
+            return isKnockoutStage(match.stage);
+          }
+          return true;
+        });
+      }
+
+      function renderMatchesByDate(matches) {
+        const grouped = {};
+
+        matches.forEach(function (match) {
+          if (!grouped[match.date]) {
+            grouped[match.date] = [];
+          }
+          grouped[match.date].push(match);
+        });
+
+        return Object.keys(grouped)
+          .sort()
+          .map(function (dateKey) {
+            return (
+              '<section class="matches-day">' +
+              '<h3 class="matches-day__heading">' +
+              formatDateHeader(dateKey) +
+              "</h3>" +
+              '<div class="matches" role="list">' +
+              grouped[dateKey].map(renderMatchCard).join("") +
+              "</div>" +
+              "</section>"
+            );
+          })
+          .join("");
+      }
+
+      function renderMatchesFlat(matches) {
+        return (
+          '<div class="matches" role="list">' + matches.map(renderMatchCard).join("") + "</div>"
+        );
+      }
+
+      const MATCH_FILTERS = [
+        { key: "all", label: "All" },
+        { key: "today", label: "Today" },
+        { key: "usa", label: "USA" },
+        { key: "group", label: "Group Stage" },
+        { key: "knockout", label: "Knockout" },
+      ];
+
+      let activeMatchFilter = "today";
+      let upcomingExpanded = false;
+
+      function renderMatchFilters() {
+        document.getElementById("match-filters").innerHTML = MATCH_FILTERS.map(function (filter) {
+          const activeClass =
+            filter.key === activeMatchFilter ? " match-filter--active" : "";
+          return (
+            '<button type="button" class="match-filter' +
+            activeClass +
+            '" data-filter="' +
+            filter.key +
+            '">' +
+            filter.label +
+            "</button>"
+          );
+        }).join("");
+      }
+
+      function applyMatchFilter(filterKey) {
+        if (activeMatchFilter === "today" && filterKey !== "today") {
+          upcomingExpanded = false;
+        }
+        activeMatchFilter = filterKey;
+        renderMatchFilters();
+        renderMatches();
+      }
+
+      function setupMatchFilters() {
+        document.getElementById("match-filters").addEventListener("click", function (event) {
+          const button = event.target.closest("[data-filter]");
+          if (!button) {
+            return;
+          }
+          applyMatchFilter(button.getAttribute("data-filter"));
+        });
+      }
+
+      function setupUpcomingToggle() {
+        document.getElementById("matches-list").addEventListener("click", function (event) {
+          const toggle = event.target.closest("[data-upcoming-toggle]");
+          if (!toggle) {
+            return;
+          }
+          upcomingExpanded = !upcomingExpanded;
+          renderMatches();
+        });
+      }
+
+      function renderTodayView() {
+        const todayKey = getTodayKey();
+        const todayMatches = CONFIG.matches.filter(isMatchToday);
+        const upcomingMatches = CONFIG.matches.filter(isMatchUpcoming);
+
+        let html = "";
+
+        if (todayMatches.length) {
+          html +=
+            '<section class="matches-day matches-day--today">' +
+            '<h3 class="matches-day__heading">' +
+            formatDateHeader(todayKey) +
+            "</h3>" +
+            '<div class="matches" role="list">' +
+            todayMatches.map(renderMatchCard).join("") +
+            "</div>" +
+            "</section>";
+        } else {
+          html +=
+            '<p class="matches-today-empty">' +
+            (upcomingMatches.length
+              ? "No matches scheduled today — the tournament starts June 11th. Check upcoming matches below."
+              : "No matches scheduled today.") +
+            "</p>";
+        }
+
+        if (upcomingMatches.length) {
+          html +=
+            '<section class="matches-upcoming">' +
+            '<button type="button" class="matches-upcoming__toggle" data-upcoming-toggle aria-expanded="' +
+            upcomingExpanded +
+            '">' +
+            (upcomingExpanded ? "Hide upcoming matches ▲" : "Show upcoming matches ▼") +
+            "</button>";
+
+          if (upcomingExpanded) {
+            html +=
+              '<div class="matches-upcoming__panel">' +
+              renderMatchesByDate(upcomingMatches) +
+              "</div>";
+          }
+
+          html += "</section>";
+        }
+
+        return { html: html, isEmpty: !todayMatches.length && !upcomingMatches.length };
+      }
+
       function renderMatches() {
         document.getElementById("matches-subtitle").textContent =
           "Catch every kickoff at " + CONFIG.barName + ".";
 
-        document.getElementById("matches-list").innerHTML = CONFIG.matches
-          .map(function (match) {
-            return (
-              '<article class="match-card" role="listitem">' +
-              '<h3 class="match-card__teams">' +
-              match.teams +
-              "</h3>" +
-              '<p class="match-card__meta">' +
-              match.stage +
-              "</p>" +
-              '<p class="match-card__meta">' +
-              match.venue +
-              "</p>" +
-              renderStatusBadge(match) +
-              "</article>"
-            );
-          })
-          .join("");
+        const listEl = document.getElementById("matches-list");
+        const emptyEl = document.getElementById("matches-empty");
+
+        if (activeMatchFilter === "today") {
+          const todayView = renderTodayView();
+          listEl.innerHTML = todayView.html;
+          emptyEl.hidden = !todayView.isEmpty;
+          return;
+        }
+
+        const filtered = filterMatches(activeMatchFilter);
+
+        if (!filtered.length) {
+          listEl.innerHTML = "";
+          emptyEl.hidden = false;
+          return;
+        }
+
+        emptyEl.hidden = true;
+
+        if (activeMatchFilter === "all") {
+          listEl.innerHTML = renderMatchesFlat(filtered);
+          return;
+        }
+
+        listEl.innerHTML = renderMatchesByDate(filtered);
       }
 
       function renderSpecials() {
@@ -307,6 +525,9 @@
 
       applyBrandColors();
       renderHero();
+      renderMatchFilters();
+      setupMatchFilters();
+      setupUpcomingToggle();
       renderMatches();
       renderSpecials();
       renderRsvpForm();
